@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teen Titans-dle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14161c;
+    --panel: #1c1f28;
+    --panel-2: #22252f;
+    --line: #2f333f;
+    --text: #eef0f4;
+    --muted: #9aa0b0;
+    --gold: #f2b632;
+    --purple: #8b6fd6;
+    --green-bt: #46c26f;
+    --correct-bg: #1f5f3e;
+    --correct-line: #46c26f;
+    --close-bg: #6b4a1a;
+    --close-line: #e08a3c;
+    --wrong-bg: #2a2d37;
+    --wrong-line: #3a3e4a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding: 28px 14px 60px;
+    position: relative;
+  }
+  /* Original comic-poster wallpaper (halftone dots + color bursts) — no character artwork used */
+  body::before{
+    content:"";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(circle at 12% 15%, rgba(139,111,214,0.38), transparent 42%),
+      radial-gradient(circle at 88% 12%, rgba(224,138,60,0.32), transparent 46%),
+      radial-gradient(circle at 20% 92%, rgba(70,194,111,0.26), transparent 42%),
+      radial-gradient(circle at 90% 85%, rgba(242,182,50,0.22), transparent 40%),
+      repeating-radial-gradient(circle at center, rgba(255,255,255,0.05) 0px, rgba(255,255,255,0.05) 1.5px, transparent 1.5px, transparent 9px),
+      linear-gradient(180deg, #1a1d27 0%, #0d0e13 100%);
+  }
+  .wrap{ width:100%; max-width: 720px; }
+
+  header{ text-align:center; margin-bottom: 22px; }
+  .eyebrow{
+    color: var(--purple);
+    font-weight:600;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  h1{
+    font-family:'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: clamp(32px, 8.5vw, 52px);
+    letter-spacing: 0.01em;
+    margin: 4px 0 6px;
+    line-height: 1.05;
+  }
+  h1 .letter{
+    -webkit-text-stroke: 1.5px #10121a;
+    paint-order: stroke fill;
+    text-shadow: 2px 3px 0 rgba(0,0,0,0.35);
+  }
+  h1 .suffix{
+    font-size: 0.58em;
+    color: var(--gold);
+    -webkit-text-stroke: 1px #10121a;
+    paint-order: stroke fill;
+  }
+  .sub{ color: var(--muted); font-size: 14px; max-width: 480px; margin: 0 auto; }
+
+  .panel{
+    background: rgba(28,31,40,0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .search-panel{ position: relative; z-index: 20; }
+  .search-row{ position:relative; }
+  input#guessInput{
+    width:100%;
+    padding: 13px 44px 13px 16px;
+    font-size:16px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: inherit;
+  }
+  input#guessInput:focus{ outline: 2px solid var(--purple); outline-offset: 1px; }
+  input#guessInput:disabled{ opacity: 0.5; }
+  .search-icon{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    color: var(--muted); pointer-events:none; font-size:15px;
+  }
+  .dropdown{
+    position:absolute; z-index:10; left:0; right:0; top:calc(100% + 6px);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    max-height: 240px;
+    overflow-y:auto;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  }
+  .dropdown button{
+    display:block; width:100%; text-align:left;
+    padding: 10px 14px; background:none; border:none;
+    color: var(--text); font-size: 14px; font-family:inherit; cursor:pointer;
+  }
+  .dropdown button:hover, .dropdown button.active{ background: rgba(139,111,214,0.18); }
+  .dropdown .empty{ padding: 12px 14px; color: var(--muted); font-size: 13px; }
+
+  .meta-row{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top: 14px; font-size: 13px; color: var(--muted);
+  }
+  #guessCount b{ color: var(--text); }
+  button.ghost{
+    background:none; border: 1px solid var(--line); color: var(--muted);
+    padding: 7px 12px; border-radius: 8px; font-size: 13px; cursor:pointer;
+    font-family: inherit;
+  }
+  button.ghost:hover{ border-color: var(--purple); color: var(--text); }
+
+  .board-scroll{ overflow-x:auto; padding-bottom: 4px; perspective: 900px; }
+  table#board{
+    border-collapse: separate;
+    border-spacing: 6px;
+    min-width: 640px;
+    width:100%;
+  }
+  table#board th{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight:600;
+    padding: 0 6px 8px;
+    text-align:center;
+  }
+  table#board th:first-child{ text-align:left; }
+  td.cell{
+    background: var(--wrong-bg);
+    border: 1px solid var(--wrong-line);
+    border-radius: 10px;
+    padding: 12px 8px;
+    text-align:center;
+    font-size: 13px;
+    font-weight:600;
+    line-height:1.25;
+    min-width: 82px;
+    transform-style: preserve-3d;
+  }
+  td.cell.correct{ background: var(--correct-bg); border-color: var(--correct-line); }
+  td.cell.close{ background: var(--close-bg); border-color: var(--close-line); }
+  td.namecell{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-weight:700;
+    font-size: 14px;
+    white-space:nowrap;
+    text-align:left;
+    transform-style: preserve-3d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .avatar{
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .avatar-fallback{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--purple);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .arrow{ display:block; font-size: 15px; margin-top: 1px; }
+  td.cell.flip, td.namecell.flip{
+    animation: flipReveal 1.8s ease both;
+  }
+  @keyframes flipReveal{
+    0%{ transform: rotateX(90deg); opacity: 0; }
+    55%{ transform: rotateX(-12deg); opacity: 1; }
+    100%{ transform: rotateX(0deg); opacity: 1; }
+  }
+
+  .legend{
+    display:flex; gap: 16px; flex-wrap:wrap; margin-top: 14px;
+    font-size: 12px; color: var(--muted);
+  }
+  .legend span{ display:inline-flex; align-items:center; gap: 6px; }
+  .swatch{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+
+  .win-banner{
+    display:none;
+    background: linear-gradient(135deg, var(--correct-bg), #143a28);
+    border: 1px solid var(--correct-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    text-align:center;
+  }
+  .win-banner.show{ display:block; }
+  .win-banner h2{
+    font-family:'Bangers', cursive;
+    letter-spacing:0.02em;
+    color: var(--gold);
+    margin: 0 0 6px;
+    font-size: 26px;
+  }
+  .win-banner p{ margin:0; color: var(--text); font-size: 14px; }
+  .countdown{ margin-top: 8px !important; color: var(--gold) !important; font-weight: 600; font-size: 13px !important; }
+  .win-banner button{
+    margin-top: 12px;
+    background: var(--gold);
+    color: #14161c;
+    border:none;
+    font-weight:700;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor:pointer;
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  footer{ text-align:center; margin-top: 24px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1 id="titleText"></h1>
+  </header>
+
+  <div class="win-banner" id="winBanner">
+    <h2>Titans, go! You got it.</h2>
+    <p id="winText"></p>
+    <p id="countdown" class="countdown" style="display:none;"></p>
+    <button id="playAgainBtn">Play again</button>
+  </div>
+
+  <div class="panel search-panel">
+    <div class="search-row">
+      <input id="guessInput" type="text" placeholder="Type a character name..." autocomplete="off">
+      <span class="search-icon">🔍</span>
+      <div class="dropdown" id="dropdown" style="display:none;"></div>
+    </div>
+    <div class="meta-row">
+      <div id="guessCount">Guesses: <b>0</b></div>
+      <div style="display:flex; gap:8px;">
+        <button class="ghost" id="practiceBtn">Practice round</button>
+        <button class="ghost" id="giveUpBtn">Give up</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel board-scroll">
+    <table id="board">
+      <thead>
+        <tr>
+          <th>Character</th>
+          <th>Affiliation</th>
+          <th>Gender</th>
+          <th>Power</th>
+          <th>Hair</th>
+          <th>Season</th>
+        </tr>
+      </thead>
+      <tbody id="boardBody"></tbody>
+    </table>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--correct-bg); border:1px solid var(--correct-line);"></span>Exact match</span>
+      <span><span class="swatch" style="background:var(--close-bg); border:1px solid var(--close-line);"></span>Close (season only)</span>
+      <span><span class="swatch" style="background:var(--wrong-bg); border:1px solid var(--wrong-line);"></span>No match</span>
+    </div>
+  </div>
+
+  <footer>Fan-made trivia game — not affiliated with or endorsed by DC or Warner Bros.</footer>
+</div>
+
+<script>
+const CHARACTERS = [
+  { name: "Robin",           affiliation: "Titans West",        gender: "Male",   power: "Martial Arts",    hair: "Black",  season: 1, alignment: "Hero" },
+  { name: "Starfire",        affiliation: "Titans West",        gender: "Female", power: "Energy Blasts",   hair: "Orange", season: 1, alignment: "Hero" },
+  { name: "Raven",           affiliation: "Titans West",        gender: "Female", power: "Magic",           hair: "Purple", season: 1, alignment: "Hero" },
+  { name: "Beast Boy",       affiliation: "Titans West",        gender: "Male",   power: "Shapeshifting",   hair: "Green",  season: 1, alignment: "Hero" },
+  { name: "Cyborg",          affiliation: "Titans West",        gender: "Male",   power: "Tech",            hair: "Bald",   season: 1, alignment: "Hero" },
+  { name: "Terra",           affiliation: "Titans West",        gender: "Female", power: "Elemental",       hair: "Blonde", season: 1, alignment: "Anti-Hero" },
+  { name: "Slade",           affiliation: "Villain",            gender: "Male",   power: "Martial Arts",    hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Jinx",            affiliation: "Hive Academy",       gender: "Female", power: "Magic",           hair: "Pink",   season: 1, alignment: "Anti-Hero" },
+  { name: "Gizmo",           affiliation: "Hive Academy",       gender: "Male",   power: "Tech",            hair: "Blonde", season: 1, alignment: "Villain" },
+  { name: "Mammoth",         affiliation: "Hive Academy",       gender: "Male",   power: "Super Strength",  hair: "Black",  season: 1, alignment: "Villain" },
+  { name: "Cinderblock",     affiliation: "Villain",            gender: "Male",   power: "Super Strength",  hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Control Freak",   affiliation: "Villain",            gender: "Male",   power: "Tech",            hair: "Brown",  season: 1, alignment: "Villain" },
+  { name: "Mad Mod",         affiliation: "Villain",            gender: "Male",   power: "Tech",            hair: "White",  season: 1, alignment: "Villain" },
+  { name: "Dr. Light",       affiliation: "Villain",            gender: "Male",   power: "Energy Blasts",   hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Plasmus",         affiliation: "Villain",            gender: "Male",   power: "Super Strength",  hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Overload",        affiliation: "Villain",            gender: "Male",   power: "Energy Blasts",   hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Johnny Rancid",   affiliation: "Villain",            gender: "Male",   power: "Tech",            hair: "Black",  season: 1, alignment: "Villain" },
+  { name: "Killer Moth",     affiliation: "Villain",            gender: "Male",   power: "Tech",            hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Mumbo Jumbo",     affiliation: "Villain",            gender: "Male",   power: "Magic",           hair: "White",  season: 1, alignment: "Villain" },
+  { name: "Kid Flash",       affiliation: "Titans East",        gender: "Male",   power: "Super Speed",     hair: "Red",    season: 2, alignment: "Hero" },
+  { name: "Bumblebee",       affiliation: "Titans East",        gender: "Female", power: "Energy Blasts",   hair: "Black",  season: 2, alignment: "Hero" },
+  { name: "Aqualad",         affiliation: "Titans East",        gender: "Male",   power: "Elemental",       hair: "Black",  season: 2, alignment: "Hero" },
+  { name: "Speedy",          affiliation: "Titans East",        gender: "Male",   power: "Martial Arts",    hair: "Red",    season: 2, alignment: "Hero" },
+  { name: "Mas y Menos",     affiliation: "Titans East",        gender: "Male",   power: "Super Speed",     hair: "Black",  season: 2, alignment: "Hero" },
+  { name: "Hot Spot",        affiliation: "Titans East",        gender: "Male",   power: "Elemental",       hair: "Black",  season: 2, alignment: "Hero" },
+  { name: "Herald",          affiliation: "Titans East",        gender: "Male",   power: "Tech",            hair: "Black",  season: 2, alignment: "Hero" },
+  { name: "Argent",          affiliation: "Titans East",        gender: "Female", power: "Energy Blasts",   hair: "Silver", season: 2, alignment: "Hero" },
+  { name: "Blackfire",       affiliation: "Villain",            gender: "Female", power: "Energy Blasts",   hair: "Black",  season: 1, alignment: "Villain" },
+  { name: "Fang",            affiliation: "Hive Academy",       gender: "Male",   power: "Mutation",        hair: "Black",  season: 2, alignment: "Villain" },
+  { name: "Kitten",          affiliation: "Villain",            gender: "Female", power: "Tech",            hair: "Blonde", season: 2, alignment: "Villain" },
+  { name: "Malchior",        affiliation: "Villain",            gender: "Male",   power: "Magic",           hair: "Bald",   season: 2, alignment: "Villain" },
+  { name: "Red Star",        affiliation: "Solo Hero",          gender: "Male",   power: "Energy Blasts",   hair: "Black",  season: 3, alignment: "Hero" },
+  { name: "Brother Blood",   affiliation: "Villain",            gender: "Male",   power: "Magic",           hair: "Black",  season: 3, alignment: "Villain" },
+  { name: "Trigon",          affiliation: "Villain",            gender: "Male",   power: "Magic",           hair: "Bald",   season: 4, alignment: "Villain" },
+  { name: "The Brain",       affiliation: "Brotherhood of Evil", gender: "Male",  power: "Tech",            hair: "Bald",   season: 5, alignment: "Villain" },
+  { name: "Monsieur Mallah", affiliation: "Brotherhood of Evil", gender: "Male",  power: "Super Strength",  hair: "Black",  season: 5, alignment: "Villain" },
+  { name: "Madame Rouge",    affiliation: "Brotherhood of Evil", gender: "Female",power: "Shapeshifting",   hair: "Red",    season: 5, alignment: "Villain" },
+  { name: "General Immortus",affiliation: "Brotherhood of Evil", gender: "Male",  power: "Tech",            hair: "White",  season: 5, alignment: "Villain" },
+  { name: "Mother Mae-Eye",  affiliation: "Villain",             gender: "Female",power: "Magic",           hair: "Grey",   season: 4, alignment: "Villain" },
+  { name: "Puppet King",     affiliation: "Villain",             gender: "Male",  power: "Magic",           hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Glgrdsklechhh",   affiliation: "Villain",             gender: "Male",  power: "None",            hair: "Bald",   season: 3, alignment: "Villain" },
+  { name: "Red X",           affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Unknown",season: 1, alignment: "Anti-Hero" },
+  { name: "Gnarrk",          affiliation: "Solo Hero",           gender: "Male",  power: "Super Strength",  hair: "Black",  season: 5, alignment: "Hero" },
+  { name: "Kole",            affiliation: "Solo Hero",           gender: "Female",power: "Crystal",         hair: "Pink",   season: 5, alignment: "Hero" },
+  { name: "See-More",        affiliation: "Hive Academy",        gender: "Male",  power: "Tech",            hair: "Bald",   season: 4, alignment: "Villain" },
+  { name: "Billy Numerous",  affiliation: "Hive Academy",        gender: "Male",  power: "Duplication",     hair: "Blonde", season: 4, alignment: "Villain" },
+  { name: "Myand'r",         affiliation: "Solo Hero",           gender: "Male",  power: "Energy Blasts",   hair: "Black",  season: 3, alignment: "Hero" },
+  { name: "Val-Yor",         affiliation: "Solo Hero",           gender: "Male",  power: "Energy Blasts",   hair: "Bald",   season: 4, alignment: "Hero" },
+  { name: "Brushogun",       affiliation: "Villain",             gender: "Male",  power: "Magic",           hair: "Bald",   season: 6, alignment: "Villain" },
+  { name: "Uehara Daizo",    affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Black",  season: 6, alignment: "Villain" },
+  { name: "Saico-Tek",       affiliation: "Villain",             gender: "Male",  power: "Martial Arts",    hair: "Bald",   season: 6, alignment: "Villain" },
+  { name: "Fixit",           affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Bald",   season: 1, alignment: "Villain" },
+  { name: "Atlas",           affiliation: "Villain",             gender: "Male",  power: "Super Strength",  hair: "Bald",   season: 2, alignment: "Villain" },
+  { name: "Thunder",         affiliation: "Solo Hero",           gender: "Male",  power: "Elemental",       hair: "White",  season: 1, alignment: "Hero" },
+  { name: "Lightning",       affiliation: "Solo Hero",           gender: "Male",  power: "Elemental",       hair: "White",  season: 1, alignment: "Hero" },
+  { name: "Tramm",           affiliation: "Solo Hero",           gender: "Male",  power: "Super Strength",  hair: "Bald",   season: 1, alignment: "Hero", image: "" },
+  { name: "Trident",         affiliation: "Villain",             gender: "Male",  power: "Energy Blasts",   hair: "Bald",   season: 1, alignment: "Villain", image: "" },
+  { name: "Newfu",           affiliation: "Villain",             gender: "Male",  power: "Duplication",     hair: "Bald",   season: 4, alignment: "Villain", image: "" },
+  { name: "T-Car",           affiliation: "Titans West",         gender: "N/A",   power: "Tech",            hair: "N/A",    season: 1, alignment: "Hero", image: "" },
+  { name: "Mechanic",        affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Brown",  season: 2, alignment: "Villain", image: "" },
+  { name: "Warp",            affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Bald",   season: 2, alignment: "Villain", image: "" },
+  { name: "Master of Games", affiliation: "Villain",             gender: "Male",  power: "Magic",           hair: "White",  season: 2, alignment: "Villain", image: "" },
+  { name: "Wildebeest",      affiliation: "Solo Hero",           gender: "Male",  power: "Super Strength",  hair: "Black",  season: 2, alignment: "Hero", image: "" },
+  { name: "Jericho",         affiliation: "Solo Hero",           gender: "Male",  power: "Mind Control",    hair: "Blonde", season: 5, alignment: "Hero", image: "" },
+  { name: "Larry",           affiliation: "Solo Hero",           gender: "Male",  power: "Magic",           hair: "Black",  season: 2, alignment: "Hero", image: "" },
+  { name: "Silkie",          affiliation: "Titans West",         gender: "Male",  power: "Mutation",        hair: "N/A",    season: 2, alignment: "Hero", image: "" },
+  { name: "Adonis",          affiliation: "Villain",             gender: "Male",  power: "Tech",            hair: "Blonde", season: 3, alignment: "Villain", image: "" },
+  { name: "True Master",     affiliation: "Solo Hero",           gender: "Female",power: "Martial Arts",    hair: "White",  season: 4, alignment: "Hero", image: "" },
+  { name: "Katarou",         affiliation: "Villain",             gender: "Male",  power: "Martial Arts",    hair: "Black",  season: 4, alignment: "Villain", image: "" },
+  { name: "Bear",            affiliation: "Solo Hero",           gender: "Male",  power: "Super Strength",  hair: "N/A",    season: 4, alignment: "Hero", image: "" },
+  { name: "Snake",           affiliation: "Solo Hero",           gender: "Male",  power: "Martial Arts",    hair: "N/A",    season: 4, alignment: "Hero", image: "" },
+  { name: "Monkey",          affiliation: "Solo Hero",           gender: "Male",  power: "Martial Arts",    hair: "N/A",    season: 4, alignment: "Hero", image: "" },
+  { name: "Sarasim",         affiliation: "Solo Hero",           gender: "Female",power: "Martial Arts",    hair: "Black",  season: 4, alignment: "Hero", image: "" },
+  { name: "Krall",           affiliation: "Villain",             gender: "Male",  power: "Super Strength",  hair: "Black",  season: 4, alignment: "Villain", image: "" },
+  { name: "Witch",           affiliation: "Villain",             gender: "Female",power: "Magic",           hair: "Grey",   season: 4, alignment: "Villain", image: "" }
+];
+
+const FIELDS = [
+  { key: "affiliation", label: "Affiliation" },
+  { key: "gender",      label: "Gender" },
+  { key: "power",       label: "Power" },
+  { key: "hair",        label: "Hair" },
+  { key: "season",      label: "Season", numeric: true }
+];
+
+let secret = null;
+let guesses = [];
+let won = false;
+let gaveUp = false;
+let isDaily = true;
+
+function renderTitle(){
+  const colors = ["#e8453c", "#f2841c", "#f2c230", "#4caf6d", "#3fb6c9", "#4f7fe0", "#8b6fd6", "#e05fa8"];
+  const word = "TEEN TITANS";
+  let html = "";
+  let ci = 0;
+  for(const ch of word){
+    if(ch === " "){ html += " "; continue; }
+    html += `<span class="letter" style="color:${colors[ci % colors.length]}">${ch}</span>`;
+    ci++;
+  }
+  html += `<span class="suffix">-dle</span>`;
+  document.getElementById("titleText").innerHTML = html;
+}
+renderTitle();
+
+// ---- Daily puzzle helpers ----
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function hashStringToIndex(str, mod){
+  let hash = 0;
+  for(let i = 0; i < str.length; i++){
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash % mod;
+}
+
+function pickDailySecret(){
+  const idx = hashStringToIndex(todayKey(), CHARACTERS.length);
+  return CHARACTERS[idx];
+}
+
+function pickRandomSecret(){
+  let idx;
+  do { idx = Math.floor(Math.random() * CHARACTERS.length); }
+  while(secret && CHARACTERS[idx].name === secret.name && CHARACTERS.length > 1);
+  return CHARACTERS[idx];
+}
+
+const PROGRESS_KEY = `ttdle-progress-${todayKey()}`;
+
+function saveProgress(){
+  if(!isDaily) return; // only the daily puzzle is persisted; practice rounds are throwaway
+  try{
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+      guessNames: guesses.map(g => g.name),
+      won,
+      gaveUp
+    }));
+  } catch(e){ /* storage unavailable — game still works, just won't persist */ }
+}
+
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw);
+  } catch(e){ return null; }
+}
+
+function msUntilMidnight(){
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+  return next - now;
+}
+
+function startCountdown(){
+  const el = document.getElementById("countdown");
+  if(!el) return;
+  clearInterval(startCountdown._t);
+  const tick = () => {
+    let ms = msUntilMidnight();
+    if(ms < 0) ms = 0;
+    const h = String(Math.floor(ms / 3600000)).padStart(2, "0");
+    const m = String(Math.floor((ms % 3600000) / 60000)).padStart(2, "0");
+    const s = String(Math.floor((ms % 60000) / 1000)).padStart(2, "0");
+    el.textContent = `Next character in ${h}:${m}:${s}`;
+  };
+  tick();
+  startCountdown._t = setInterval(tick, 1000);
+}
+
+function newGame(random){
+  isDaily = !random;
+  secret = isDaily ? pickDailySecret() : pickRandomSecret();
+  guesses = [];
+  won = false;
+  gaveUp = false;
+  document.getElementById("boardBody").innerHTML = "";
+  document.getElementById("guessCount").innerHTML = "Guesses: <b>0</b>";
+  document.getElementById("winBanner").classList.remove("show");
+  clearInterval(startCountdown._t);
+  const input = document.getElementById("guessInput");
+  input.disabled = false;
+  input.value = "";
+  hideDropdown();
+
+  const practiceBtn = document.getElementById("practiceBtn");
+  practiceBtn.textContent = isDaily ? "Practice round" : "Back to today's puzzle";
+
+  if(isDaily){
+    const saved = loadProgress();
+    if(saved){
+      guesses = saved.guessNames
+        .map(n => CHARACTERS.find(c => c.name === n))
+        .filter(Boolean)
+        .reverse(); // stored oldest-first, board wants newest-first
+      won = !!saved.won;
+      gaveUp = !!saved.gaveUp;
+      renderBoard(true);
+      document.getElementById("guessCount").innerHTML = `Guesses: <b>${guesses.length}</b>`;
+      if(won){
+        input.disabled = true;
+        showWin(true);
+      } else if(gaveUp){
+        input.disabled = true;
+        showGiveUp();
+      }
+    }
+  }
+  input.focus();
+}
+
+function remainingNames(){
+  const used = new Set(guesses.map(g => g.name));
+  return CHARACTERS.filter(c => !used.has(c.name)).map(c => c.name);
+}
+
+function renderDropdown(query){
+  const dd = document.getElementById("dropdown");
+  const q = query.trim().toLowerCase();
+  const pool = remainingNames();
+  const matches = q === "" ? pool : pool.filter(n => n.toLowerCase().includes(q));
+  if(matches.length === 0){
+    dd.innerHTML = '<div class="empty">No matching characters</div>';
+  } else {
+    dd.innerHTML = matches.slice(0, 30).map(n => `<button type="button" data-name="${n}">${n}</button>`).join("");
+  }
+  dd.style.display = "block";
+}
+
+function hideDropdown(){
+  document.getElementById("dropdown").style.display = "none";
+}
+
+function submitGuess(name){
+  const character = CHARACTERS.find(c => c.name.toLowerCase() === name.toLowerCase());
+  if(!character || won) return;
+
+  guesses.unshift(character);
+  document.getElementById("guessInput").value = "";
+  hideDropdown();
+  document.getElementById("guessCount").innerHTML = `Guesses: <b>${guesses.length}</b>`;
+  renderBoard();
+
+  if(character.name === secret.name){
+    won = true;
+    document.getElementById("guessInput").disabled = true;
+    showWin(false);
+  }
+  saveProgress();
+}
+
+function showWin(instant){
+  const banner = document.getElementById("winBanner");
+  banner.querySelector("h2").textContent = "Titans, go! You got it.";
+  document.getElementById("winText").textContent =
+    `It was ${secret.name}. You found it in ${guesses.length} guess${guesses.length === 1 ? "" : "es"}.`;
+  banner.classList.add("show");
+
+  const btn = document.getElementById("playAgainBtn");
+  if(isDaily){
+    btn.textContent = "Play a practice round";
+    btn.onclick = () => newGame(true);
+    document.getElementById("countdown").style.display = "block";
+    startCountdown();
+  } else {
+    btn.textContent = "Play again";
+    btn.onclick = () => newGame(true);
+    document.getElementById("countdown").style.display = "none";
+  }
+}
+
+const FLIP_STEP_MS = 450;
+
+function cellHTML(field, character, colIndex, animate){
+  const guessVal = character[field.key];
+  const answerVal = secret[field.key];
+  const flipAttrs = animate
+    ? ` flip" style="animation-delay:${colIndex * FLIP_STEP_MS}ms"`
+    : `"`;
+
+  if(field.numeric){
+    if(guessVal === answerVal){
+      return `<td class="cell correct${flipAttrs}>${guessVal}</td>`;
+    }
+    const arrow = guessVal < answerVal ? "▲" : "▼";
+    return `<td class="cell close${flipAttrs}>${guessVal}<span class="arrow">${arrow}</span></td>`;
+  }
+
+  const cls = guessVal === answerVal ? "correct" : "";
+  return `<td class="cell ${cls}${flipAttrs}>${guessVal}</td>`;
+}
+
+function initials(name){
+  const parts = name.split(/[\s'-]+/).filter(Boolean);
+  if(parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function avatarHTML(character){
+  if(character.image){
+    return `<img class="avatar" src="${character.image}" alt="${character.name}">`;
+  }
+  return `<span class="avatar avatar-fallback">${initials(character.name)}</span>`;
+}
+
+function renderBoard(skipAnimation){
+  const body = document.getElementById("boardBody");
+  body.innerHTML = guesses.map((character, rowIndex) => {
+    const animate = !skipAnimation && rowIndex === 0; // only the newest guess flips in
+    const nameFlip = animate ? ` flip" style="animation-delay:0ms"` : `"`;
+    const nameCell = `<td class="namecell${nameFlip}>${avatarHTML(character)}<span>${character.name}</span></td>`;
+    const cells = FIELDS.map((f, i) => cellHTML(f, character, i + 1, animate)).join("");
+    return `<tr>${nameCell}${cells}</tr>`;
+  }).join("");
+}
+
+function revealAnswer(){
+  if(won || gaveUp) return;
+  gaveUp = true;
+  document.getElementById("guessInput").disabled = true;
+  hideDropdown();
+  showGiveUp();
+  saveProgress();
+}
+
+function showGiveUp(){
+  const banner = document.getElementById("winBanner");
+  banner.querySelector("h2").textContent = "Better luck next time";
+  document.getElementById("winText").textContent = `The answer was ${secret.name}.`;
+  banner.classList.add("show");
+
+  const btn = document.getElementById("playAgainBtn");
+  if(isDaily){
+    btn.textContent = "Play a practice round";
+    btn.onclick = () => newGame(true);
+    document.getElementById("countdown").style.display = "block";
+    startCountdown();
+  } else {
+    btn.textContent = "Play again";
+    btn.onclick = () => newGame(true);
+    document.getElementById("countdown").style.display = "none";
+  }
+}
+
+const input = document.getElementById("guessInput");
+input.addEventListener("focus", () => renderDropdown(input.value));
+input.addEventListener("input", () => renderDropdown(input.value));
+input.addEventListener("keydown", (e) => {
+  if(e.key === "Enter"){
+    const q = input.value.trim().toLowerCase();
+    const exact = CHARACTERS.find(c => c.name.toLowerCase() === q);
+    if(exact) submitGuess(exact.name);
+  }
+});
+document.getElementById("dropdown").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-name]");
+  if(btn) submitGuess(btn.dataset.name);
+});
+document.addEventListener("click", (e) => {
+  if(!e.target.closest(".search-row")) hideDropdown();
+});
+document.getElementById("giveUpBtn").addEventListener("click", revealAnswer);
+document.getElementById("practiceBtn").addEventListener("click", () => {
+  newGame(isDaily); // if currently daily, switch to practice (random); if already practice, go back to daily
+});
+
+newGame();
+</script>
+</body>
+</html>
